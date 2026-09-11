@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@import "./print.css";
+
+@theme {
+  --color-ground: #F7F5F0;
+  --color-surface: #FFFFFF;
+  --color-ink: #202825;
+  --color-muted: #52605A;
+  --color-primary: #176B5B;
+  --color-primary-strong: #0F5346;
+  --color-accent: #8A5A00;
+  --color-accent-soft: #FBF1DC;
+  --color-line: #D8DFD8;
+  --font-reading: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+}
+
+:root {
+  color-scheme: light;
+  --reading-size: 1.125rem;
+}
+
+html[data-text-scale="large"] {
+  --reading-size: 1.3125rem;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html[data-reduced-motion="on"] *,
+html[data-reduced-motion="on"] *::before,
+html[data-reduced-motion="on"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+.reading {
+  font-size: var(--reading-size);
+  line-height: 1.7;
+  max-width: 68ch;
+  margin-inline: auto;
+}
+
+.reading-heading {
+  font-family: var(--font-reading);
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 0 0 0.5rem 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
