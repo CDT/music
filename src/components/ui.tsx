@@ -26,13 +26,88 @@ export function Button({ variant = 'secondary', className = '', children, ...res
   );
 }
 
-export function Card({ children, className = '', as: Tag = 'section' }: {
-  children: ReactNode; className?: string; as?: 'section' | 'article' | 'div';
+type CardTone = 'plain' | 'raised' | 'feature';
+
+/**
+ * Three weights, so a grid of cards has somewhere for the eye to land first.
+ * `plain` is the default page furniture, `raised` lifts a card the reader acts
+ * on, and `feature` marks the one card a page is really about.
+ */
+const CARD_TONES: Record<CardTone, string> = {
+  plain: 'border-[var(--color-line)] bg-[var(--color-surface)] shadow-[0_1px_2px_rgb(32_40_37_/_0.04)]',
+  raised: 'border-[var(--color-line)] bg-[var(--color-surface)] shadow-[0_2px_10px_rgb(32_40_37_/_0.07)]',
+  feature:
+    'border-[color-mix(in_srgb,var(--color-primary)_28%,var(--color-line))] bg-[color-mix(in_srgb,var(--color-primary)_4%,var(--color-surface))] shadow-[0_2px_12px_rgb(23_107_91_/_0.10)]',
+};
+
+export function Card({ children, className = '', tone = 'plain', as: Tag = 'section' }: {
+  children: ReactNode; className?: string; tone?: CardTone; as?: 'section' | 'article' | 'div';
 }) {
   return (
-    <Tag className={`rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-5 ${className}`}>
+    // min-w-0 so a card used as a grid item can shrink below the intrinsic
+    // width of its content. Without it a fixed-width child — the piano keyboard
+    // — widens the whole page instead of scrolling inside its own container.
+    <Tag className={`min-w-0 rounded-xl border p-5 ${CARD_TONES[tone]} ${className}`}>
       {children}
     </Tag>
+  );
+}
+
+/**
+ * A plain proportion bar. It carries its own progressbar semantics so the
+ * number beside it is never the only way to read the value.
+ */
+export function Meter({ value, max, label, className = '' }: {
+  value: number; max: number; label: string; className?: string;
+}) {
+  const percent = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  return (
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      className={`h-2.5 w-full overflow-hidden rounded-full border border-[var(--color-line)] bg-[var(--color-ground)] ${className}`}
+    >
+      <div
+        className="h-full rounded-full bg-[var(--color-primary)] transition-[width] duration-500"
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  );
+}
+
+/**
+ * A proportion bar split across named parts, for showing a distribution — how
+ * many readiness answers were comfortable, with help, or not yet — rather than
+ * a single fraction. Segments of zero are dropped so the bar stays readable.
+ */
+export function SegmentBar({ segments, label, className = '' }: {
+  segments: Array<{ key: string; value: number; tone: 'good' | 'help' | 'notyet' }>;
+  label: string;
+  className?: string;
+}) {
+  const tones: Record<string, string> = {
+    good: 'bg-[var(--color-primary)]',
+    help: 'bg-[#C89A3C]',
+    notyet: 'bg-[#B08163]',
+  };
+  const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+  if (total === 0) return null;
+  return (
+    <div
+      aria-label={label}
+      className={`flex h-2.5 w-full overflow-hidden rounded-full border border-[var(--color-line)] bg-[var(--color-ground)] ${className}`}
+    >
+      {segments.filter((segment) => segment.value > 0).map((segment) => (
+        <div
+          key={segment.key}
+          className={tones[segment.tone]}
+          style={{ width: `${(segment.value / total) * 100}%` }}
+        />
+      ))}
+    </div>
   );
 }
 

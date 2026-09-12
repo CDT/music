@@ -5,7 +5,7 @@ import { useStore } from '../app/use-store';
 import {
   completedCount, due, manualAttemptCount, screenExerciseSummaries, skillSummaries, unknownLessonIds,
 } from '../app/progress';
-import { Card, Muted, Pill, SectionHeading, StatusNote } from '../components/ui';
+import { Card, Meter, Muted, Pill, SectionHeading, SegmentBar, StatusNote } from '../components/ui';
 import { SKILL_LABELS } from '../domain/types';
 
 const CONTINUED_PRACTICE = [
@@ -37,35 +37,43 @@ export function ProgressPage() {
         musicianship score, because one number would hide the information you actually need.
       </Muted>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <SectionHeading>Lessons</SectionHeading>
-          <p className="text-3xl font-semibold">{completed} / {TOTAL_LESSONS}</p>
+      <Card tone="feature" className="mb-6">
+        <SectionHeading>Lessons</SectionHeading>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <p className="text-4xl font-semibold tabular-nums">{completed} / {TOTAL_LESSONS}</p>
           <Muted>completed</Muted>
-          {unknown.length > 0 ? (
-            <div className="mt-3">
-              <StatusNote kind="info">
-                {`${unknown.length} lesson id${unknown.length === 1 ? '' : 's'} in your saved data are not part of this version of the course. They remain in your backups but are excluded from the total above.`}
-              </StatusNote>
-            </div>
-          ) : null}
-          <ul className="mt-3 space-y-1 text-sm">
-            {LESSONS.filter((l) => data.lessons[l.id]?.status === 'completed').slice(-6).reverse().map((lesson) => (
-              <li key={lesson.id}>
-                <Link to={`/lesson/${lesson.id}`} className="text-[var(--color-primary)] underline">
-                  {lesson.title}
-                </Link>
-                {data.lessons[lesson.id]?.readiness ? (
-                  <span className="ml-2 text-[var(--color-muted)]">
-                    {data.lessons[lesson.id]!.readiness!.replace('-', ' ')}
-                  </span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </Card>
+        </div>
+        <Meter
+          className="mt-3 max-w-md"
+          value={completed}
+          max={TOTAL_LESSONS}
+          label={`${completed} of ${TOTAL_LESSONS} lessons completed`}
+        />
+        {unknown.length > 0 ? (
+          <div className="mt-3">
+            <StatusNote kind="info">
+              {`${unknown.length} lesson id${unknown.length === 1 ? '' : 's'} in your saved data are not part of this version of the course. They remain in your backups but are excluded from the total above.`}
+            </StatusNote>
+          </div>
+        ) : null}
+        <ul className="mt-4 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+          {LESSONS.filter((l) => data.lessons[l.id]?.status === 'completed').slice(-6).reverse().map((lesson) => (
+            <li key={lesson.id}>
+              <Link to={`/lesson/${lesson.id}`} className="text-[var(--color-primary)] underline">
+                {lesson.title}
+              </Link>
+              {data.lessons[lesson.id]?.readiness ? (
+                <span className="ml-2 text-[var(--color-muted)]">
+                  {data.lessons[lesson.id]!.readiness!.replace('-', ' ')}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </Card>
 
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card tone="raised">
           <SectionHeading>Reviews</SectionHeading>
           <p className="mb-2">
             {dueItems.length === 0
@@ -103,17 +111,26 @@ export function ProgressPage() {
           {skills.length === 0 ? (
             <Muted>Nothing reported yet. Readiness appears here once you answer “How did it go?”.</Muted>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {skills.map((skill) => (
-                <li key={skill.skill} className="flex flex-wrap items-center justify-between gap-2">
-                  <span>{SKILL_LABELS[skill.skill]}</span>
-                  <span className="flex items-center gap-2">
+                <li key={skill.skill}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span>{SKILL_LABELS[skill.skill]}</span>
                     <Pill tone={skill.latest === 'comfortable' ? 'good' : skill.latest === 'with-help' ? 'help' : 'notyet'}>
                       {skill.latest?.replace('-', ' ')}
                     </Pill>
-                    <span className="text-xs text-[var(--color-muted)]">
-                      {`${skill.counts.comfortable} comfortable · ${skill.counts['with-help']} with help · ${skill.counts['not-yet']} not yet`}
-                    </span>
+                  </div>
+                  <SegmentBar
+                    className="mt-1.5"
+                    label={`${SKILL_LABELS[skill.skill]}: ${skill.counts.comfortable} comfortable, ${skill.counts['with-help']} with help, ${skill.counts['not-yet']} not yet`}
+                    segments={[
+                      { key: 'comfortable', value: skill.counts.comfortable, tone: 'good' },
+                      { key: 'with-help', value: skill.counts['with-help'], tone: 'help' },
+                      { key: 'not-yet', value: skill.counts['not-yet'], tone: 'notyet' },
+                    ]}
+                  />
+                  <span className="mt-1 block text-xs text-[var(--color-muted)]">
+                    {`${skill.counts.comfortable} comfortable · ${skill.counts['with-help']} with help · ${skill.counts['not-yet']} not yet`}
                   </span>
                 </li>
               ))}

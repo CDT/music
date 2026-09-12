@@ -192,7 +192,11 @@ export function Keyboard({
         onBlur={releaseAll}
         className="relative overflow-x-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-2 focus-visible:outline-3"
       >
-        <div className="relative" style={{ width, height: WHITE_HEIGHT }}>
+        {/* The keys are a fixed pixel width, so centre them rather than leaving a
+            void on a wide card. Auto margins collapse to zero once the keyboard
+            is wider than its scroll container, which keeps the left edge
+            reachable. */}
+        <div className="relative mx-auto" style={{ width, height: WHITE_HEIGHT }}>
           {keys.filter((k) => !k.black).map((k, index) => (
             <PianoKey
               key={k.midi}

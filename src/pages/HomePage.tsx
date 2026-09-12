@@ -4,13 +4,28 @@ import { LESSONS, TOTAL_LESSONS, lessonById } from '../content/course';
 import { planSession } from '../domain/review';
 import { useStore } from '../app/use-store';
 import { completedCount, due, nextIncompleteLesson } from '../app/progress';
-import { Button, Card, Muted, Pill, SectionHeading } from '../components/ui';
+import { Button, Card, Meter, Muted, Pill, SectionHeading } from '../components/ui';
 
 const BUDGETS: Array<{ value: 5 | 15 | 30 | null; label: string; detail: string }> = [
   { value: 5, label: '5 minutes', detail: '1 min recall · 2 min one ear task · 2 min music' },
   { value: 15, label: '15 minutes', detail: '3 min review · 5 min lesson · 5 min piano · 2 min reflection' },
   { value: 30, label: '30 minutes', detail: '5 review · 8 lesson · 10 application · 5 improvising · 2 reflection' },
   { value: null, label: 'Untimed', detail: 'Stop whenever you like; your place is kept' },
+];
+
+const FIRST_VISIT_HIGHLIGHTS = [
+  {
+    title: '48 lessons',
+    detail: 'Twelve modules. Each lesson has an outcome, a playable example, on-screen tasks and a task at your own piano.',
+  },
+  {
+    title: 'Six study pieces',
+    detail: 'Original, short, and learnable in chunks — playable at your tempo, in more than one key.',
+  },
+  {
+    title: 'Practice tools',
+    detail: 'An ear trainer, a metronome, a virtual piano and a harmony lab for comparing two harmonizations.',
+  },
 ];
 
 export function HomePage() {
@@ -36,26 +51,38 @@ export function HomePage() {
 
   if (isFirstVisit) {
     return (
-      <div className="reading">
-        <h1 className="reading-heading text-3xl font-semibold">
-          Learn to turn the music you hear into melody and accompaniment.
-        </h1>
-        <p className="mt-4">
-          Forty-eight written lessons, six short study pieces, and practice tools that run entirely in
-          this browser. You will hear a phrase, sing or imagine it, find it on your piano, and learn
-          to support it with chords.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button variant="primary" onClick={() => navigate('/lesson/m01-l01')}>
-            Start the first lesson
-          </Button>
-          <Button onClick={() => navigate('/course')}>Browse the course</Button>
-          <Button variant="quiet" onClick={() => navigate('/start')}>Set up a few preferences</Button>
+      <div>
+        <div className="reading">
+          <h1 className="reading-heading text-3xl font-semibold">
+            Learn to turn the music you hear into melody and accompaniment.
+          </h1>
+          <p className="mt-4">
+            Forty-eight written lessons, six short study pieces, and practice tools that run entirely in
+            this browser. You will hear a phrase, sing or imagine it, find it on your piano, and learn
+            to support it with chords.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button variant="primary" onClick={() => navigate('/lesson/m01-l01')}>
+              Start the first lesson
+            </Button>
+            <Button onClick={() => navigate('/course')}>Browse the course</Button>
+            <Button variant="quiet" onClick={() => navigate('/start')}>Set up a few preferences</Button>
+          </div>
+          <Muted className="mt-6">
+            Nothing is saved anywhere but this browser. There is no account, no subscription, and no
+            recording of your playing.
+          </Muted>
+
+          {/* Inside the reading column so these line up with the prose above. */}
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            {FIRST_VISIT_HIGHLIGHTS.map((item) => (
+              <Card key={item.title}>
+                <p className="reading-heading text-lg font-semibold">{item.title}</p>
+                <Muted className="mt-1">{item.detail}</Muted>
+              </Card>
+            ))}
+          </div>
         </div>
-        <Muted className="mt-6">
-          Nothing is saved anywhere but this browser. There is no account, no subscription, and no
-          recording of your playing.
-        </Muted>
       </div>
     );
   }
@@ -63,7 +90,7 @@ export function HomePage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
       <div>
-        <Card className="mb-6">
+        <Card tone="feature" className="mb-6">
           <SectionHeading>Continue</SectionHeading>
           {nextLesson ? (
             <>
@@ -87,7 +114,7 @@ export function HomePage() {
           )}
         </Card>
 
-        <Card className="mb-6">
+        <Card tone="raised" className="mb-6">
           <SectionHeading>How long do you have?</SectionHeading>
           <div className="mb-3 flex flex-wrap gap-2">
             {BUDGETS.map((option) => (
@@ -132,8 +159,14 @@ export function HomePage() {
       <div>
         <Card className="mb-6">
           <SectionHeading>Progress</SectionHeading>
-          <p className="text-2xl font-semibold">{completed} / {TOTAL_LESSONS}</p>
+          <p className="text-2xl font-semibold tabular-nums">{completed} / {TOTAL_LESSONS}</p>
           <Muted>lessons completed</Muted>
+          <Meter
+            className="mt-2"
+            value={completed}
+            max={TOTAL_LESSONS}
+            label={`${completed} of ${TOTAL_LESSONS} lessons completed`}
+          />
           <p className="mt-3">
             {dueItems.length === 0
               ? 'No reviews are due today.'

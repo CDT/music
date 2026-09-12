@@ -81,3 +81,87 @@ html[data-reduced-motion="on"] *::after {
 .skip-link:focus {
   left: 0;
 }
+
+/* ---------------------------------------------------------------------------
+   Form controls.
+
+   These are element selectors in the unlayered sheet, so they win over
+   Tailwind's layered utilities without every call site needing a class. The
+   browser defaults — a system-blue slider, a platform select arrow — read as
+   foreign against the rest of the palette.
+   --------------------------------------------------------------------------- */
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-primary);
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%2352605A' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 0.7rem;
+  padding-right: 2rem;
+}
+
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* A range input has no single stylable element, so the track and the thumb are
+   set per engine. Both engines need appearance:none before the track shows. */
+input[type="range"] {
+  appearance: none;
+  height: 1.5rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--color-line);
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  /* Centres an 18px thumb on a 6px track. */
+  margin-top: -0.375rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+  background: var(--color-primary);
+  box-shadow: 0 1px 3px rgb(32 40 37 / 0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 1.125rem;
+  height: 1.125rem;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+  background: var(--color-primary);
+  box-shadow: 0 1px 3px rgb(32 40 37 / 0.3);
+}
