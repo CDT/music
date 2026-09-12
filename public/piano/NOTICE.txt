@@ -1,0 +1,10 @@
+Salamander Grand Piano (Yamaha C5), recorded by Alexander Holm.
+Licensed under Creative Commons Attribution 3.0:
+https://creativecommons.org/licenses/by/3.0/
+
+The files in this folder are the minor-third note set of that library,
+converted to MP3, as redistributed in https://github.com/Tonejs/audio.
+They are unmodified apart from that format conversion.
+
+This app downloads them only when you ask it to. Its default instrument is
+synthesized in the browser and needs no download at all.

@@ -5,6 +5,7 @@ import { audioEngine } from '../services/audio/context';
 import { previewPitches } from '../services/audio/transport';
 import { metronome } from '../services/audio/metronome';
 import { stopAllVoices } from '../services/audio/synth';
+import { PianoToneCard } from '../features/audio/PianoToneCard';
 import { LABEL_MODE_OPTIONS } from '../features/notation/labels';
 import { Button, Card, Field, Muted, SectionHeading, StatusNote, inputClass } from '../components/ui';
 import { SCHEMA_VERSION } from '../services/storage/schema';
@@ -138,9 +139,11 @@ export function SettingsPage() {
             <Button variant="accent" onClick={() => { metronome.stop(); stopAllVoices(); }}>Stop everything</Button>
           </div>
           <Muted className="mt-3">
-            {`Audio status: ${audioEngine.status}. The instrument is a synthesized piano model, not a recorded piano.`}
+            {`Audio status: ${audioEngine.status}.`}
           </Muted>
         </Card>
+
+        <PianoToneCard />
 
         <Card>
           <SectionHeading>Practice defaults</SectionHeading>

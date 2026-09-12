@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { transport } from '../services/audio/transport';
 import { metronome } from '../services/audio/metronome';
 import { useStore } from './use-store';
+import { useRestorePianoTone } from '../features/audio/use-piano-tone';
 import { StatusNote } from '../components/ui';
 
 const PRIMARY_LINKS: Array<{ to: string; label: string; end?: boolean }> = [
@@ -22,7 +23,8 @@ const SECONDARY_LINKS: Array<{ to: string; label: string; end?: boolean }> = [
 
 export function Layout() {
   const location = useLocation();
-  const { status, store } = useStore();
+  const { data, status, store } = useStore();
+  useRestorePianoTone(data.settings.pianoTone === 'recorded');
 
   // Navigation stops all sounding notes and scheduled events.
   useEffect(() => {

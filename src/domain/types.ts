@@ -287,6 +287,11 @@ export interface AppSettings {
   metronomeLatencyMs: number;
   onboarded: boolean;
   comfortableRange: 'low' | 'middle' | 'high';
+  /**
+   * Which piano to play. 'synthesized' needs no download; 'recorded' uses the
+   * optional sample pack, downloaded once and kept in the browser cache.
+   */
+  pianoTone: 'synthesized' | 'recorded';
 }
 
 export interface PersistedData {

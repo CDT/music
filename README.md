@@ -140,6 +140,24 @@ generated room resonance.
 It is a synthesized piano, not a recording of one, and it does not claim the
 range of colour a real instrument or a sampled library has.
 
+### Recorded piano (optional, 1.5 MB)
+
+**Settings → Piano sound**, and the first-visit preferences page, offer a
+recorded grand piano instead. Nothing is downloaded until you pick it. When you
+do, 23 note recordings are fetched once and kept in this browser's Cache
+Storage, so every later visit loads them from disk without touching the network.
+**Delete the download** removes them and puts the synthesized piano back.
+
+The recordings are the Salamander Grand Piano (Yamaha C5) by Alexander Holm,
+licensed [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), sampled
+every minor third so no note is pitch-shifted by more than a semitone. They are
+served from this site, not from a CDN, and they are calibrated to the same
+loudness as the synthesized piano so switching changes colour and nothing else.
+
+Everything in the course works with either instrument. If the download fails or
+the browser refuses to cache it, the synthesized piano keeps playing and the app
+says what happened.
+
 - Audio starts only after a deliberate action such as **Play** or **Enable
   sound**, which is what browsers require.
 - If audio is suspended or unavailable, the app says so and the written lessons,

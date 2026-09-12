@@ -1,6 +1,7 @@
 import { audioEngine } from './context';
 import { noiseBuffer, pianoVoiceSpec } from './instrument';
 import type { PianoVoiceSpec } from './instrument';
+import { sampleLibrary } from './samples';
 import type { Voice } from '../../domain/types';
 
 /**
@@ -96,6 +97,50 @@ export interface VoiceGraph {
   gain: GainNode;
   sources: AudioScheduledSourceNode[];
   spec: PianoVoiceSpec;
+  /** Seconds this note stays audible if it is never released. */
+  ring: number;
+}
+
+/**
+ * A note played from the recorded piano, when that optional pack is loaded.
+ *
+ * The pack holds one medium-strength layer every minor third, so a note is
+ * shifted by at most a semitone. The recording carries its own decay; velocity
+ * shapes level and, through the tone filter, colour, because a soft note on a
+ * real piano is darker and not merely quieter.
+ */
+function createSampledVoice(
+  context: BaseAudioContext,
+  destination: AudioNode,
+  options: NoteOptions,
+  when: number,
+  spec: PianoVoiceSpec,
+  sampled: { buffer: AudioBuffer; semitones: number },
+): VoiceGraph {
+  const touch = Math.min(1, Math.max(0.05, options.velocity ?? 0.8));
+  const brightness = options.accent ? Math.min(1, touch * 1.15) : touch;
+
+  const source = context.createBufferSource();
+  source.buffer = sampled.buffer;
+  const rate = Math.pow(2, sampled.semitones / 12);
+  source.playbackRate.setValueAtTime(rate, when);
+
+  const tone = context.createBiquadFilter();
+  tone.type = 'lowpass';
+  tone.Q.setValueAtTime(0.4, when);
+  tone.frequency.setValueAtTime(Math.min(1500 + 20000 * brightness * brightness, 18000), when);
+
+  const gain = context.createGain();
+  // Matched by ear and by measurement to the synthesized voice, so switching
+  // instruments changes colour without changing how loud the app is.
+  const peak = 1.6 * Math.pow(touch, 1.3);
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.linearRampToValueAtTime(peak, when + 0.004);
+
+  source.connect(tone).connect(gain).connect(destination);
+  source.start(when);
+
+  return { gain, sources: [source], spec, ring: sampled.buffer.duration / rate };
 }
 
 /**
@@ -109,6 +154,9 @@ export function createVoiceGraph(
   when: number,
 ): VoiceGraph {
   const spec = pianoVoiceSpec(context, options.midi, options.velocity ?? 0.8, options.accent);
+  const sampled = sampleLibrary.bufferFor(options.midi);
+  if (sampled) return createSampledVoice(context, destination, options, when, spec, sampled);
+
   const sources: AudioScheduledSourceNode[] = [];
 
   // Shared tone filter: bright at the strike, closing as the note settles.
@@ -168,7 +216,7 @@ export function createVoiceGraph(
     sources.push(hammer);
   }
 
-  return { gain, sources, spec };
+  return { gain, sources, spec, ring: spec.ring };
 }
 
 /** Play one note. Returns a handle that can release a held note. */
@@ -181,14 +229,14 @@ export function playNote(options: NoteOptions): { release: (when?: number) => vo
   const when = Math.max(options.when ?? now, now);
   reclaimVoices(now);
 
-  const { gain, sources, spec } = createVoiceGraph(context, bus, options, when);
+  const { gain, sources, spec, ring } = createVoiceGraph(context, bus, options, when);
 
   voiceCounter += 1;
   const voice: ActiveVoice = {
     id: voiceCounter,
     midi: options.midi,
     startedAt: when,
-    silentAt: when + spec.ring,
+    silentAt: when + ring,
     releaseAt: options.duration ? when + options.duration : Number.POSITIVE_INFINITY,
     damp: spec.damp,
     sources,

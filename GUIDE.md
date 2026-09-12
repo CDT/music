@@ -31,7 +31,7 @@ The product name is **From Inner Melody to Piano**. Short navigation label: **In
 
 Required: written teaching, synthesized examples, a virtual piano, a metronome, phrase playback and looping, ear exercises, a chord comparison tool, accompaniment patterns, a melody notebook, manual real-piano practice, local progress, backup/import, search, print styles, and GitHub Pages compatibility.
 
-Optional future enhancements: Web MIDI input, microphone pitch detection, audio recording, sample-based piano sounds, installable/offline PWA behavior, MusicXML/MIDI export, advanced notation engraving, and instrument-specific technique tracks. Hide unimplemented optional features; never present nonfunctional buttons. All required learning must work without these enhancements.
+Optional future enhancements: Web MIDI input, microphone pitch detection, audio recording, installable/offline PWA behavior, MusicXML/MIDI export, advanced notation engraving, and instrument-specific technique tracks. Hide unimplemented optional features; never present nonfunctional buttons. All required learning must work without these enhancements.
 
 ## 2. Teaching model
 
@@ -775,6 +775,7 @@ interface PersistedData {
     defaultSessionMinutes: 5|15|30|null;
     masterVolume: number;
     reducedMotion: 'system'|'on';
+    pianoTone: 'synthesized'|'recorded';
   };
   lessons: Record<string, LessonProgress>;
   reviews: ReviewItem[];
@@ -808,6 +809,7 @@ Initialize or resume a single AudioContext after a deliberate user gesture such 
 The following are application design requirements, not promises of browser timing perfection:
 
 - Use a gentle synthesized piano tone built from native Web Audio nodes, not a recorded sample library. Model the behaviours that make a piano sound like a piano: a hammer strike point that notches out every eighth partial, two unison string layers detuned by one to three cents, upper partials stretched sharp by string stiffness, a short attack of 3–10 ms, upper partials that die within 0.1–0.3 s while the fundamental continues, a two-stage decay that is always falling rather than a flat sustain, a ring time that runs from around 13 s in the bass to about 1 s at the top, and a damper release of 0.07 s in the treble to 0.34 s in the bass. Velocity sets brightness as well as level. Avoid harsh sawtooth defaults and flat sustains. Call it a synthesized piano sound; do not imply it is an acoustic piano recording.
+- Offer an optional recorded-piano pack as a deliberate choice, never as a default or an automatic download. Present it on the first-visit preferences page and in Settings, stating its size before it is fetched. Sample every minor third so no note is pitch-shifted by more than a semitone, cover the whole range the course plays, serve the files from this site rather than a CDN, keep the download in Cache Storage so later visits need no network, and offer a delete. Match its loudness to the synthesized piano, and keep the whole course working when the pack is absent, when the download fails and when the browser refuses to cache it. Credit the recordings and their licence wherever the choice is offered.
 - Pass every pitched voice through a shared soundboard stage — a small low-mid lift, a gentle high-shelf cut and a short generated room impulse at a low send level — so notes are not heard as bare oscillators. Generate the impulse response in code; do not ship audio assets for it. Keep the metronome out of that stage.
 - Give melody, bass, upper chords, and metronome separate gains. Start at conservative master volume, with melody louder than accompaniment. Normalize chord amplitude for multiple voices and use a compressor/limiter stage to reduce clipping risk. Cap polyphony, for example at 32 voices, and release the oldest inactive/releasing voices first.
 - Use the audio clock for scheduling. A short interval, around 25 ms, queues events into a roughly 100 ms lookahead window; it does not directly produce each beat. Visual highlighting follows audio time through animation frames.

@@ -5,6 +5,7 @@ import { Button, Card, Field, Muted, SectionHeading, StatusNote, inputClass } fr
 import { LABEL_MODE_OPTIONS } from '../features/notation/labels';
 import { previewPitches } from '../services/audio/transport';
 import { ExerciseRunner } from '../features/exercises/ExerciseRunner';
+import { PianoToneCard } from '../features/audio/PianoToneCard';
 import { exerciseById } from '../content/exercises';
 
 const PROFILE = [
@@ -96,7 +97,8 @@ export function StartPage() {
         <SectionHeading>Sound test</SectionHeading>
         <p className="mb-3">
           Browsers only start audio after a deliberate action. Press the button to hear a C major
-          chord. This is a synthesized piano sound, not a piano recording.
+          chord. The default instrument is synthesized in the browser; you can switch to a recorded
+          piano below.
         </p>
         <Button
           variant="primary"
@@ -108,6 +110,8 @@ export function StartPage() {
           <div className="mt-3"><StatusNote kind="success">Sound is working.</StatusNote></div>
         ) : null}
       </Card>
+
+      <PianoToneCard className="my-5" />
 
       <Card className="my-5">
         <SectionHeading>Optional diagnostic</SectionHeading>

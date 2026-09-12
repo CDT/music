@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   metronomeLatencyMs: 0,
   onboarded: false,
   comfortableRange: 'middle',
+  pianoTone: 'synthesized',
 };
 
 export function emptyData(contentVersion: string): PersistedData {
@@ -121,6 +122,9 @@ function validateSettings(value: unknown): AppSettings {
     comfortableRange: value.comfortableRange === undefined
       ? DEFAULT_SETTINGS.comfortableRange
       : oneOf(value.comfortableRange, 'comfortableRange', ['low', 'middle', 'high'] as const),
+    pianoTone: value.pianoTone === undefined
+      ? DEFAULT_SETTINGS.pianoTone
+      : oneOf(value.pianoTone, 'pianoTone', ['synthesized', 'recorded'] as const),
   };
 }
 
