@@ -126,9 +126,19 @@ repositories on one `github.io` hostname share an origin.
 
 ## Sound
 
-The instrument is a synthesized keyboard tone made with Web Audio — a triangle
-fundamental with a quieter harmonic layer. It is not a recorded piano, and it is
-not intended to sound like one.
+The instrument is a piano synthesized with native Web Audio nodes — no sample
+library, no audio downloads. Each note is built from the things that make a real
+piano recognisable: a hammer strike point that thins out every eighth partial,
+two unison string layers detuned a couple of cents apart so the note beats
+gently, upper partials stretched sharp by string stiffness and gone within a
+fraction of a second, a decay that keeps falling instead of a flat sustain, bass
+notes that ring for many seconds where the top octave dies away in about one,
+and a damper that takes real time to stop the string. Velocity changes colour as
+well as loudness, and everything passes through a soundboard tilt and a short
+generated room resonance.
+
+It is a synthesized piano, not a recording of one, and it does not claim the
+range of colour a real instrument or a sampled library has.
 
 - Audio starts only after a deliberate action such as **Play** or **Enable
   sound**, which is what browsers require.

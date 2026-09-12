@@ -1,21 +1,31 @@
-import { frequencyOf } from '../../domain/pitch';
 import { audioEngine } from './context';
+import { noiseBuffer, pianoVoiceSpec } from './instrument';
+import type { PianoVoiceSpec } from './instrument';
 import type { Voice } from '../../domain/types';
 
 /**
- * A gentle synthesized keyboard tone: a triangle fundamental plus a quieter
- * sine harmonic. This is a synthesized sound, not a recorded piano.
+ * Voice allocation and note events for the synthesized piano.
+ *
+ * Each note is two slightly detuned string layers sharing a filter that closes
+ * as the note settles, an upper-partial layer that fades within a fraction of a
+ * second, and a hammer thump at the strike. The tone model itself lives in
+ * `instrument.ts`. This is a synthesized instrument, not a piano recording.
  */
 
 const MAX_VOICES = 32;
 
 interface ActiveVoice {
   id: number;
+  midi: number;
   startedAt: number;
+  /** Audio time the note stops ringing on its own if it is never released. */
+  silentAt: number;
   releaseAt: number;
-  oscillators: OscillatorNode[];
+  damp: number;
+  sources: AudioScheduledSourceNode[];
   gain: GainNode;
   releasing: boolean;
+  stopped: boolean;
 }
 
 let voiceCounter = 0;
@@ -29,14 +39,9 @@ export interface NoteOptions {
   duration?: number;
   velocity?: number;
   voice?: Voice | 'metronome';
-  /** Slightly brighter tone for accents. */
+  /** A firmer touch: brighter and a little louder, as a harder strike is. */
   accent?: boolean;
 }
-
-const ATTACK = 0.008;
-const DECAY = 0.22;
-const SUSTAIN = 0.55;
-const RELEASE = 0.12;
 
 function busFor(voice: NoteOptions['voice']): GainNode | null {
   const buses = audioEngine.bus;
@@ -51,8 +56,12 @@ function busFor(voice: NoteOptions['voice']): GainNode | null {
 
 function reclaimVoices(now: number) {
   for (let i = active.length - 1; i >= 0; i -= 1) {
-    if (active[i].releaseAt + RELEASE + 0.05 < now) {
-      stopVoice(active[i], now, true);
+    const voice = active[i];
+    const finished = voice.releasing
+      ? voice.releaseAt + voice.damp + 0.05 < now
+      : voice.silentAt < now;
+    if (finished) {
+      stopVoice(voice, now, true);
       active.splice(i, 1);
     }
   }
@@ -67,18 +76,99 @@ function reclaimVoices(now: number) {
 
 function stopVoice(voice: ActiveVoice, when: number, immediate = false) {
   const context = audioEngine.ctx;
-  if (!context) return;
+  if (!context || voice.stopped) return;
   const time = Math.max(when, context.currentTime);
+  const fade = immediate ? 0.02 : voice.damp;
   try {
     voice.gain.gain.cancelScheduledValues(time);
     voice.gain.gain.setValueAtTime(Math.max(voice.gain.gain.value, 0.0001), time);
-    voice.gain.gain.exponentialRampToValueAtTime(0.0001, time + (immediate ? 0.02 : RELEASE));
-    for (const osc of voice.oscillators) {
-      osc.stop(time + (immediate ? 0.04 : RELEASE + 0.02));
+    voice.gain.gain.exponentialRampToValueAtTime(0.0001, time + fade);
+    for (const source of voice.sources) {
+      source.stop(time + fade + 0.02);
     }
   } catch {
     // A voice already stopped; nothing to do.
   }
+  voice.stopped = true;
+}
+
+export interface VoiceGraph {
+  gain: GainNode;
+  sources: AudioScheduledSourceNode[];
+  spec: PianoVoiceSpec;
+}
+
+/**
+ * Build one piano note into any audio graph. Kept separate from `playNote` so
+ * the same voice can be rendered offline and measured.
+ */
+export function createVoiceGraph(
+  context: BaseAudioContext,
+  destination: AudioNode,
+  options: NoteOptions,
+  when: number,
+): VoiceGraph {
+  const spec = pianoVoiceSpec(context, options.midi, options.velocity ?? 0.8, options.accent);
+  const sources: AudioScheduledSourceNode[] = [];
+
+  // Shared tone filter: bright at the strike, closing as the note settles.
+  const tone = context.createBiquadFilter();
+  tone.type = 'lowpass';
+  tone.Q.setValueAtTime(0.6, when);
+  tone.frequency.setValueAtTime(spec.cutoff, when);
+  tone.frequency.setTargetAtTime(spec.cutoffFloor, when + spec.attack, spec.cutoffTau);
+
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.linearRampToValueAtTime(spec.peak, when + spec.attack);
+  // Two-stage decay: a quick drop from the strike, then the long string tail.
+  gain.gain.setTargetAtTime(spec.peak * spec.earlyLevel, when + spec.attack, spec.earlyTau);
+  gain.gain.setTargetAtTime(0, when + spec.attack + spec.earlyTau * 2.5, spec.lateTau);
+  tone.connect(gain).connect(destination);
+
+  // Two unison string layers a couple of cents apart, so the note beats gently.
+  for (const [detune, level] of [[-spec.unisonCents, 1], [spec.unisonCents, 0.85]] as const) {
+    const string = context.createOscillator();
+    string.setPeriodicWave(spec.core);
+    string.frequency.setValueAtTime(spec.frequency, when);
+    string.detune.setValueAtTime(detune, when);
+    const stringGain = context.createGain();
+    stringGain.gain.setValueAtTime(level, when);
+    string.connect(stringGain).connect(tone);
+    string.start(when);
+    sources.push(string);
+  }
+
+  // Upper partials: stretched sharp by string stiffness, gone within a moment.
+  const bright = context.createOscillator();
+  bright.setPeriodicWave(spec.bright);
+  bright.frequency.setValueAtTime(spec.frequency, when);
+  bright.detune.setValueAtTime(spec.stretchCents, when);
+  const brightGain = context.createGain();
+  brightGain.gain.setValueAtTime(spec.brightLevel, when);
+  brightGain.gain.setTargetAtTime(0, when + spec.attack, spec.brightTau);
+  bright.connect(brightGain).connect(tone);
+  bright.start(when);
+  sources.push(bright);
+
+  // Hammer felt hitting the string: a very short filtered thump.
+  if (spec.hammerLevel > 0.001) {
+    const hammer = context.createBufferSource();
+    hammer.buffer = noiseBuffer(context);
+    const hammerFilter = context.createBiquadFilter();
+    hammerFilter.type = 'bandpass';
+    hammerFilter.frequency.setValueAtTime(spec.hammerFrequency, when);
+    hammerFilter.Q.setValueAtTime(0.8, when);
+    const hammerGain = context.createGain();
+    hammerGain.gain.setValueAtTime(spec.hammerLevel, when);
+    hammerGain.gain.exponentialRampToValueAtTime(0.0001, when + 0.045);
+    hammer.connect(hammerFilter).connect(hammerGain).connect(gain);
+    hammer.start(when);
+    hammer.stop(when + 0.08);
+    sources.push(hammer);
+  }
+
+  return { gain, sources, spec };
 }
 
 /** Play one note. Returns a handle that can release a held note. */
@@ -91,47 +181,31 @@ export function playNote(options: NoteOptions): { release: (when?: number) => vo
   const when = Math.max(options.when ?? now, now);
   reclaimVoices(now);
 
-  const frequency = frequencyOf(options.midi);
-  const velocity = Math.min(1, Math.max(0.05, options.velocity ?? 0.8));
-  const peak = 0.32 * velocity;
-
-  const gain = context.createGain();
-  gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.linearRampToValueAtTime(peak, when + ATTACK);
-  gain.gain.exponentialRampToValueAtTime(Math.max(peak * SUSTAIN, 0.0002), when + ATTACK + DECAY);
-  gain.connect(bus);
-
-  const fundamental = context.createOscillator();
-  fundamental.type = 'triangle';
-  fundamental.frequency.setValueAtTime(frequency, when);
-
-  const harmonic = context.createOscillator();
-  harmonic.type = 'sine';
-  harmonic.frequency.setValueAtTime(frequency * 2, when);
-  const harmonicGain = context.createGain();
-  harmonicGain.gain.setValueAtTime(options.accent ? 0.28 : 0.18, when);
-  harmonic.connect(harmonicGain).connect(gain);
-
-  fundamental.connect(gain);
-  fundamental.start(when);
-  harmonic.start(when);
+  const { gain, sources, spec } = createVoiceGraph(context, bus, options, when);
 
   voiceCounter += 1;
   const voice: ActiveVoice = {
     id: voiceCounter,
+    midi: options.midi,
     startedAt: when,
+    silentAt: when + spec.ring,
     releaseAt: options.duration ? when + options.duration : Number.POSITIVE_INFINITY,
-    oscillators: [fundamental, harmonic],
+    damp: spec.damp,
+    sources,
     gain,
     releasing: false,
+    stopped: false,
   };
   active.push(voice);
 
   if (options.duration !== undefined) {
+    // The key is let go at the end of the note; the damper takes real time to
+    // stop the string, longer in the bass than in the treble.
     const end = when + options.duration;
-    gain.gain.setTargetAtTime(0.0001, end, RELEASE / 3);
-    fundamental.stop(end + RELEASE + 0.05);
-    harmonic.stop(end + RELEASE + 0.05);
+    gain.gain.setTargetAtTime(0, end, spec.damp / 3.5);
+    for (const source of sources) {
+      try { source.stop(end + spec.damp + 0.08); } catch { /* already stopped */ }
+    }
     voice.releasing = true;
   }
 
@@ -145,24 +219,47 @@ export function playNote(options: NoteOptions): { release: (when?: number) => vo
   };
 }
 
-/** A short metronome click. The first beat uses a higher, brighter tone. */
+/**
+ * A short metronome click. A quick pitch drop through a narrow band reads as a
+ * wooden tick rather than an electronic beep, and the first beat sits higher.
+ */
 export function playClick(when: number, kind: 'strong' | 'weak' | 'subdivision') {
   const context = audioEngine.ctx;
   const buses = audioEngine.bus;
   if (!context || !buses) return;
   const time = Math.max(when, context.currentTime);
+
+  const frequency = kind === 'strong' ? 1500 : kind === 'weak' ? 1080 : 880;
+  const peak = kind === 'strong' ? 0.4 : kind === 'weak' ? 0.26 : 0.12;
+  const length = kind === 'subdivision' ? 0.035 : 0.055;
+
+  const body = context.createGain();
+  body.gain.setValueAtTime(0.0001, time);
+  body.gain.linearRampToValueAtTime(peak, time + 0.002);
+  body.gain.exponentialRampToValueAtTime(0.0001, time + length);
+  body.connect(buses.metronome);
+
   const osc = context.createOscillator();
-  const gain = context.createGain();
-  const frequency = kind === 'strong' ? 1760 : kind === 'weak' ? 1320 : 990;
-  const peak = kind === 'strong' ? 0.5 : kind === 'weak' ? 0.32 : 0.16;
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(frequency, time);
-  gain.gain.setValueAtTime(0.0001, time);
-  gain.gain.linearRampToValueAtTime(peak, time + 0.002);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-  osc.connect(gain).connect(buses.metronome);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(frequency * 1.6, time);
+  osc.frequency.exponentialRampToValueAtTime(frequency, time + 0.02);
+  osc.connect(body);
   osc.start(time);
-  osc.stop(time + 0.08);
+  osc.stop(time + length + 0.03);
+
+  // A trace of noise at the onset gives the click its wooden edge.
+  const tap = context.createBufferSource();
+  tap.buffer = noiseBuffer(context);
+  const tapFilter = context.createBiquadFilter();
+  tapFilter.type = 'bandpass';
+  tapFilter.frequency.setValueAtTime(frequency * 2.2, time);
+  tapFilter.Q.setValueAtTime(1.2, time);
+  const tapGain = context.createGain();
+  tapGain.gain.setValueAtTime(peak * 0.5, time);
+  tapGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.02);
+  tap.connect(tapFilter).connect(tapGain).connect(buses.metronome);
+  tap.start(time);
+  tap.stop(time + 0.05);
 }
 
 /** Immediately silence every sounding voice. */

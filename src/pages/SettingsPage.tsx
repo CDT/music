@@ -138,7 +138,7 @@ export function SettingsPage() {
             <Button variant="accent" onClick={() => { metronome.stop(); stopAllVoices(); }}>Stop everything</Button>
           </div>
           <Muted className="mt-3">
-            {`Audio status: ${audioEngine.status}. The instrument is a synthesized keyboard sound, not a recorded piano.`}
+            {`Audio status: ${audioEngine.status}. The instrument is a synthesized piano model, not a recorded piano.`}
           </Muted>
         </Card>
 

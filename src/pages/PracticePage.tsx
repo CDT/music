@@ -132,7 +132,7 @@ export function PracticePage() {
         <Card className="lg:col-span-2">
           <SectionHeading>Free piano</SectionHeading>
           <Muted className="mb-3">
-            A synthesized keyboard for checking a note or trying a shape. Playing several keys at once
+            A synthesized piano for checking a note or trying a shape. Playing several keys at once
             is never required anywhere in this app.
           </Muted>
           <Keyboard musicKey={majorKey('C')} labelMode={data.settings.labelMode} lowMidi={48} highMidi={84} />

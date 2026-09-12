@@ -96,7 +96,7 @@ export function StartPage() {
         <SectionHeading>Sound test</SectionHeading>
         <p className="mb-3">
           Browsers only start audio after a deliberate action. Press the button to hear a C major
-          chord. This is a synthesized keyboard sound, not a piano recording.
+          chord. This is a synthesized piano sound, not a piano recording.
         </p>
         <Button
           variant="primary"
