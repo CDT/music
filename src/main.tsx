@@ -5,9 +5,11 @@ import './styles/index.css';
 import { router } from './app/router';
 import { StoreProvider } from './app/store-context';
 import { ErrorBoundary } from './app/ErrorBoundary';
+import { startTranslation } from './app/i18n';
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Root element is missing from index.html');
+startTranslation();
 
 createRoot(container).render(
   <StrictMode>

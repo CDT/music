@@ -1,10 +1,11 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { transport } from '../services/audio/transport';
 import { metronome } from '../services/audio/metronome';
 import { useStore } from './use-store';
 import { useRestorePianoTone } from '../features/audio/use-piano-tone';
 import { StatusNote } from '../components/ui';
+import { getLocale, setLocale, type Locale } from './i18n';
 
 const PRIMARY_LINKS: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/', label: 'Home', end: true },
@@ -22,6 +23,7 @@ const SECONDARY_LINKS: Array<{ to: string; label: string; end?: boolean }> = [
 ];
 
 export function Layout() {
+  const [locale, updateLocale] = useState<Locale>(getLocale);
   const location = useLocation();
   const { data, status, store } = useStore();
   useRestorePianoTone(data.settings.pianoTone === 'recorded');
@@ -55,6 +57,19 @@ export function Layout() {
               </NavLink>
             ))}
           </nav>
+          <button
+            type="button"
+            data-no-translate
+            aria-label={locale === 'en' ? 'Switch to Simplified Chinese' : '切换为英文'}
+            className="ml-auto min-h-11 rounded border border-[var(--color-line)] px-3 text-sm text-[var(--color-primary)]"
+            onClick={() => {
+              const next = locale === 'en' ? 'zh-CN' : 'en';
+              setLocale(next);
+              updateLocale(next);
+            }}
+          >
+            {locale === 'en' ? '简体中文' : 'English'}
+          </button>
         </div>
       </header>
 

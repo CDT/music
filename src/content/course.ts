@@ -11,6 +11,7 @@ import { module09 } from './modules/module09';
 import { module10 } from './modules/module10';
 import { module11 } from './modules/module11';
 import { module12 } from './modules/module12';
+import chineseText from './zh-CN.json';
 
 export const CONTENT_VERSION = '1.0.0';
 
@@ -79,7 +80,7 @@ export const LESSON_SEARCH_INDEX: LessonSearchRecord[] = MODULES.flatMap((module
           case 'exercise': return [block.exerciseId];
         }
       }),
-    ].join(' ').toLowerCase(),
+    ].flatMap((text) => [text, (chineseText as Record<string, string>)[text] ?? '']).join(' ').toLowerCase(),
   })),
 );
 
