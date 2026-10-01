@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
 test.describe('core journeys', () => {
   test('1 — first visit, first lesson, audio, manual task, refresh keeps progress', async ({ page }) => {
     await page.goto('./');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('学习将你听到的音乐变成旋律和伴奏。');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('学会把听到的旋律弹出来，再配上伴奏。');
 
     await page.getByRole('button', { name: '开始第一课' }).click();
     await expect(page).toHaveURL(/#\/lesson\/m01-l01/);
@@ -24,11 +24,11 @@ test.describe('core journeys', () => {
     await page.getByRole('button', { name: '■ 停止' }).first().click();
 
     // A manual self-report completes the lesson.
-    await page.getByRole('button', { name: '在帮助下' }).last().click();
+    await page.getByRole('button', { name: '借助提示完成' }).last().click();
 
     await page.reload();
     await expect(page.getByText('已完成', { exact: true })).toBeVisible();
-    await expect(page.getByText('掌握程度：在帮助下')).toBeVisible();
+    await expect(page.getByText('掌握程度：借助提示完成')).toBeVisible();
   });
 
   test('2 — every module and lesson route opens, and search finds the key terms', async ({ page }) => {
@@ -46,36 +46,38 @@ test.describe('core journeys', () => {
     for (const module of ['m01', 'm04', 'm07', 'm10', 'm12']) {
       await page.goto(`./#/lesson/${module}-l01`);
       await expect(page.getByRole('heading', { level: 1 })).not.toBeEmpty();
-      await expect(page.getByRole('heading', { name: '你将能够做什么' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: '在你的钢琴旁' }).first()).toBeVisible();
+      await expect(page.getByRole('heading', { name: '课程目标' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: '上琴练习' }).first()).toBeVisible();
       await expect(page.locator('body')).not.toContainText('coming soon');
     }
   });
 
   test('3 — ear trainer hides the answer, gives feedback, and records assistance', async ({ page }) => {
     await page.goto('./#/practice/ear');
-    await page.getByLabel('运动类型').selectOption('contour');
+    await page.getByLabel('练习类型').selectOption('contour');
+    await expect(page.getByLabel('提示', { exact: true }).locator('option').first())
+      .toHaveText('中间音离起始音近，还是远？（选择旋律走向）');
 
-    await expect(page.getByText('独立完成')).toBeVisible();
-    await page.getByRole('button', { name: /▶ 听/ }).first().click();
+    await expect(page.getByText('独立完成', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /^▶ 试听/ }).first().click();
 
     // Answer with the first option; one of the two is wrong by construction.
     const options = page.locator('fieldset').filter({ hasText: '选择你的答案' }).getByRole('button');
     await options.first().click();
-    await expect(page.getByText(/听起来/).first()).toBeVisible();
+    await expect(page.getByText(/与播放的声音/).first()).toBeVisible();
     await expect(page.getByRole('button', { name: '再试一次' })).toBeVisible();
 
-    await page.getByRole('button', { name: '揭晓答案' }).click();
+    await page.getByRole('button', { name: '查看答案' }).click();
     await expect(page.getByRole('heading', { name: '答案' })).toBeVisible();
-    await expect(page.getByText('协助尝试')).toBeVisible();
+    await expect(page.getByText('借助提示完成', { exact: true }).first()).toBeVisible();
   });
 
   test('4 — a 3/4 study offers only compatible patterns and loops a bar range', async ({ page }) => {
     await page.goto('./#/studies/s04');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('小华尔兹');
-    await expect(page.getByText('本研究的预备拍是一个完整的三拍小节，而不是默认的四拍。')).toBeVisible();
+    await expect(page.getByText('这首练习曲用一个完整的三拍小节作预备拍，不用默认的四拍。')).toBeVisible();
 
-    const patternSelect = page.getByLabel('图案', { exact: true });
+    const patternSelect = page.getByLabel('伴奏型', { exact: true });
     const options = await patternSelect.locator('option').allTextContents();
     expect(options.join(' ')).toContain('华尔兹');
     expect(options.join(' ')).not.toContain('阿尔贝蒂');
@@ -90,19 +92,19 @@ test.describe('core journeys', () => {
   test('5 — the Harmony Lab compares two progressions and saves the arrangement', async ({ page }) => {
     await page.goto('./#/harmony');
     await page.getByLabel('旋律', { exact: true }).selectOption('s01');
-    await page.getByLabel('第一小节').fill('5');
+    await page.getByLabel('第 1 小节', { exact: true }).fill('5');
     await page.getByLabel('最后一个小节').fill('8');
 
     await page.getByLabel('版本 B，第 5 小节和弦').selectOption('Am');
-    await expect(page.getByRole('heading', { name: 'B版' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'B 版' })).toBeVisible();
 
-    await page.getByLabel('你选择了哪个版本，你听到了什么？')
+    await page.getByLabel('选了哪个版本？听到了什么具体区别？')
       .fill('F leans outward; Am stays closer to the tonic. I chose Am for this phrase.');
     await page.getByRole('button', { name: '将两个版本保存到笔记本中' }).click();
-    await expect(page.getByText('已保存。这两个版本都会被存储，以便你可以重新打开并收听它们。')).toBeVisible();
+    await expect(page.getByText('已保存两个版本，之后可以重新打开试听。')).toBeVisible();
 
     await page.goto('./#/notebook');
-    await expect(page.getByText('第一缕曙光 第 5–8 小节')).toBeVisible();
+    await expect(page.getByText('曙光 第 5–8 小节')).toBeVisible();
   });
 
   test('6 — the notebook warns about an incomplete bar, then plays once repaired', async ({ page }) => {
@@ -115,7 +117,7 @@ test.describe('core journeys', () => {
     await page.getByRole('button', { name: 'C4', exact: true }).click();
     await page.getByRole('button', { name: 'D4', exact: true }).click();
     await expect(page.getByText(/加起来不等于/)).toBeVisible();
-    await expect(page.getByText('吃水').first()).toBeVisible();
+    await expect(page.getByText('草稿').first()).toBeVisible();
 
     await page.getByRole('button', { name: '2 拍', exact: true }).click();
     await page.getByRole('button', { name: 'E4', exact: true }).click();
@@ -148,7 +150,7 @@ test.describe('core journeys', () => {
       buffer: Buffer.from(JSON.stringify(backup)),
     });
     await expect(page.getByRole('heading', { name: /导入预览/ })).toBeVisible();
-    await expect(page.getByText('1 个笔记本条目')).toBeVisible();
+    await expect(page.getByText('1 条笔记')).toBeVisible();
 
     await page.getByRole('button', { name: '取消' }).click();
     await page.goto('./#/notebook');
@@ -181,8 +183,8 @@ test.describe('core journeys', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: '跳至主要内容' })).toBeFocused();
 
-    await page.getByRole('button', { name: '新的练习音符' }).click();
-    const notes = page.getByLabel('音符', { exact: true });
+    await page.getByRole('button', { name: '新建练习笔记' }).click();
+    const notes = page.getByLabel('练习笔记', { exact: true });
     await notes.click();
     await notes.type('asdf gh jk');
     await expect(notes).toHaveValue('asdf gh jk');
@@ -191,10 +193,10 @@ test.describe('core journeys', () => {
   test('10 — a mobile-width screen reaches the final actions without sideways scrolling', async ({ page }) => {
     test.skip(test.info().project.name !== 'mobile', 'Runs in the mobile project only');
     await page.goto('./#/lesson/m01-l01');
-    await expect(page.getByRole('navigation', { name: '初级、紧凑型' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: '主导航（紧凑）' })).toBeVisible();
 
-    await page.getByRole('button', { name: '熟练掌握' }).last().click();
-    await expect(page.getByText('记住并重温')).toBeVisible();
+    await page.getByRole('button', { name: '能独立完成' }).last().click();
+    await expect(page.getByText('记下来，再回顾')).toBeVisible();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -205,14 +207,14 @@ test.describe('core journeys', () => {
 
 test('unknown routes and missing ids show a useful not-found view', async ({ page }) => {
   await page.goto('./#/nowhere');
-  await expect(page.getByText('找不到该页面')).toBeVisible();
+  await expect(page.getByText('找不到这个页面')).toBeVisible();
   await expect(page.getByRole('main').getByRole('link', { name: '课程' })).toBeVisible();
 
   await page.goto('./#/lesson/m99-l99');
-  await expect(page.getByText('找不到该课程')).toBeVisible();
+  await expect(page.getByText('找不到这节课')).toBeVisible();
 
   await page.goto('./#/notebook/nb-missing');
-  await expect(page.getByText('找不到该笔记本条目')).toBeVisible();
+  await expect(page.getByText('找不到这条笔记')).toBeVisible();
 });
 
 test('storage failure keeps the lesson usable and export available', async ({ page }) => {

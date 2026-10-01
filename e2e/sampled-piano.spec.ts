@@ -43,7 +43,7 @@ test('the recorded piano is opt-in, cached, and removable', async ({ page }) => 
 
   // Choosing the recorded piano downloads it once.
   await page.getByRole('radio', { name: /钢琴录音/ }).check();
-  await expect(page.getByText('录制的钢琴已加载并正在使用。')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('已加载钢琴录音音色，正在使用。')).toBeVisible({ timeout: 60_000 });
   expect(downloads.length).toBeGreaterThan(20);
 
   // Notes now come from the recording rather than from oscillators.
@@ -57,11 +57,11 @@ test('the recorded piano is opt-in, cached, and removable', async ({ page }) => 
   downloads.length = 0;
   await page.reload();
   await page.getByRole('button', { name: '启用声音' }).click();
-  await expect(page.getByText('录制的钢琴已加载并正在使用。')).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('已加载钢琴录音音色，正在使用。')).toBeVisible({ timeout: 60_000 });
   expect(downloads).toEqual([]);
 
   // Deleting it returns to the synthesized piano.
-  await page.getByRole('button', { name: '删除下载' }).click();
+  await page.getByRole('button', { name: '删除已下载的音色' }).click();
   await expect(page.getByRole('radio', { name: /合成钢琴/ })).toBeChecked();
   const oscillatorsAfterDelete = await page.evaluate(() => window.__play!.oscillators);
   await page.getByRole('button', { name: '弹奏三和弦' }).click();

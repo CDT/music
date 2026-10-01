@@ -8,6 +8,7 @@ import { PATTERNS, patternsForMeter } from '../content/patterns';
 import { validateScore } from '../domain/score';
 import { barBeats, splitIntoBars, validateBars } from '../domain/rhythm';
 import { chordSymbolText } from '../domain/harmony';
+import chineseText from '../content/zh-CN.json';
 
 describe('curriculum completeness', () => {
   it('has 12 modules and 48 lessons with unique ids', () => {
@@ -100,8 +101,30 @@ describe('curriculum completeness', () => {
   });
 
   it('finds the expected search terms', () => {
-    for (const term of ['minor', 'canon', 'pedal', 'transposition']) {
+    for (const term of ['minor', 'canon', 'pedal', 'transposition', '小调', '卡农', '弱起', '主音', '移调']) {
       expect(searchLessons(term).length, term).toBeGreaterThan(0);
+    }
+  });
+
+  it('provides Chinese copy for the complete written curriculum', () => {
+    const catalog: Record<string, string> = chineseText;
+    for (const module of MODULES) {
+      const texts = [module.title, module.summary, ...module.lessons.flatMap((lesson) => [
+        lesson.title, lesson.objective, lesson.beforeYouStart, lesson.readinessCheck,
+        lesson.takeaway, lesson.makeItYours, lesson.reviewTask, ...lesson.ifDifficult,
+        ...lesson.blocks.flatMap((block) => {
+          switch (block.type) {
+            case 'prose': return [...(block.heading ? [block.heading] : []), ...block.paragraphs];
+            case 'example': return [block.prompt];
+            case 'piano-task': return [...block.steps, block.easier, block.stretch];
+            case 'reflection': return [block.prompt];
+            case 'exercise': return [];
+          }
+        }),
+      ])];
+      for (const text of texts) {
+        expect(catalog[text], `${module.id}: ${text}`).toMatch(/\p{Script=Han}/u);
+      }
     }
   });
 });

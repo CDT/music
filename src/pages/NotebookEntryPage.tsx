@@ -171,7 +171,7 @@ export function NotebookEntryPage() {
         <Field id="entry-title" label="Title">
           <input id="entry-title" className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
         </Field>
-        <Field id="entry-text" label="Notes" hint="Plain text. It is stored and displayed as text, never as HTML.">
+        <Field id="entry-text" label="Practice notes" hint="Plain text. It is stored and displayed as text, never as HTML.">
           <textarea
             id="entry-text"
             rows={5}

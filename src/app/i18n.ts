@@ -14,8 +14,8 @@ const overrides: Record<string, string> = {
   'G major': 'G 大调',
   'F major': 'F 大调',
   'D major': 'D 大调',
-  'Understand': '理解',
-  'Try it': '试一试',
+  'Understand': '理解原理',
+  'Try it': '动手试试',
   'A phrase': '乐句',
   'phrase': '乐句',
   'phrases': '乐句',
@@ -33,7 +33,7 @@ const overrides: Record<string, string> = {
   'Progress': '学习进度',
   'Settings': '设置',
   'Unassisted': '独立完成',
-  'Comfortable': '熟练掌握',
+  'Comfortable': '能独立完成',
   'Bar': '小节',
   'Chord': '和弦',
   'Notes': '音符',
@@ -53,6 +53,19 @@ export function translate(value: string): string {
     if (lessonCount) return `${match[1]}显示 ${lessonCount[1]} 节课。${match[3]}`;
     const beats = original.match(/^([\d.]+) beats?$/);
     if (beats) return `${match[1]}${beats[1]} 拍${match[3]}`;
+    const degree = original.match(/^Degree ([b#]?[1-7])$/);
+    if (degree) return `${match[1]}${degree[1]} 级音${match[3]}`;
+    const tempo = original.match(/^Tempo: ([\d.]+) quarter BPM$/);
+    if (tempo) return `${match[1]}速度：每分钟 ${tempo[1]} 拍（四分音符为一拍）${match[3]}`;
+    const pitchDifference = original.match(/^(higher|lower) than the target by (\d+) semitones$/);
+    if (pitchDifference) return `${match[1]}比目标音${pitchDifference[1] === 'higher' ? '高' : '低'} ${pitchDifference[2]} 个半音${match[3]}`;
+    const compatiblePatterns = original.match(/^Only patterns compatible with (\d+\/\d+) are offered\. Incompatible patterns are not silently adapted\.$/);
+    if (compatiblePatterns) return `${match[1]}只提供适合 ${compatiblePatterns[1]} 拍的伴奏型，不会自动改动其他伴奏型来凑拍数。${match[3]}`;
+    const studyMode = original.match(/^This study is in a (major|minor) key, so it transposes to other \1 keys\. Changing mode would rewrite the music rather than transpose it\.$/);
+    if (studyMode) {
+      const mode = studyMode[1] === 'major' ? '大调' : '小调';
+      return `${match[1]}这首练习曲是${mode}，可以移到其他${mode}。改变调式会改变音乐本身，不属于单纯移调。${match[3]}`;
+    }
     const barRange = original.match(/^Bars (\d+)–(\d+)$/);
     if (barRange) return `${match[1]}第 ${barRange[1]}–${barRange[2]} 小节${match[3]}`;
     const chordLabel = original.match(/^Version ([AB]), bar (\d+) (second )?chord$/);
@@ -62,7 +75,7 @@ export function translate(value: string): string {
     const invalidBar = original.match(/^Bar (\d+) does not add up to ([\d.]+) beats, so this is saved as a draft and full arrangement playback is disabled until it is repaired\.$/);
     if (invalidBar) return `${match[1]}第 ${invalidBar[1]} 小节的时值加起来不等于 ${invalidBar[2]} 拍，因此暂存为草稿。修正后才能播放完整编配。${match[3]}`;
     const notebookCount = original.match(/^(\d+) notebook entries$/);
-    if (notebookCount) return `${match[1]}${notebookCount[1]} 个笔记本条目${match[3]}`;
+    if (notebookCount) return `${match[1]}${notebookCount[1]} 条笔记${match[3]}`;
     if (/^Changes are not being saved(?: on this browser)? \(/.test(original)) {
       return `${match[1]}此浏览器无法保存更改。你的操作暂存在本次会话中，仍可导出备份。${match[3]}`;
     }
@@ -80,6 +93,18 @@ export function translate(value: string): string {
       .replaceAll('quarter', '四分音符').replaceAll('half', '二分音符')
       .replaceAll('eighth', '八分音符').replaceAll('whole', '全音符')
       .replaceAll('rest', '休止符')}${match[3]}`;
+    const optionLabel = original.match(/^(.+) \(([^()]+)\)$/);
+    if (optionLabel) {
+      const title = translate(optionLabel[1]);
+      const detail = translate(optionLabel[2]);
+      if (title !== optionLabel[1] || detail !== optionLabel[2]) {
+        return `${match[1]}${title}（${detail}）${match[3]}`;
+      }
+    }
+    const metadataParts = original.split(' · ');
+    if (metadataParts.length > 1) {
+      return `${match[1]}${metadataParts.map(translate).join(' · ')}${match[3]}`;
+    }
     const descriptionParts = original.split(' — ');
     if (descriptionParts.length > 1) {
       return `${match[1]}${descriptionParts.map(translate).join(' — ')}${match[3]}`;

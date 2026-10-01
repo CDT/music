@@ -6,6 +6,7 @@ import { notesText } from '../domain/rhythm';
 import { chordSymbolText } from '../domain/harmony';
 import { keyName } from '../domain/pitch';
 import { Button } from '../components/ui';
+import { translate } from '../app/i18n';
 import type { Lesson, LessonBlock } from '../domain/types';
 
 /**
@@ -25,7 +26,7 @@ export function PrintCoursePage() {
 
       <h1 className="reading-heading text-3xl font-semibold">From Inner Melody to Piano</h1>
       <p className="mb-6">
-        {`The complete written course: 12 modules and ${TOTAL_LESSONS} lessons. Musical examples are given as note data, so this document is readable without sound.`}
+        {`完整课程共 12 个单元、${TOTAL_LESSONS} 节课。音乐示例同时提供音符数据，不播放声音也可以阅读。`}
       </p>
 
       {MODULES.map((module) => (
@@ -91,13 +92,13 @@ function PrintBlock({ block }: { block: LessonBlock }) {
           <p>{block.prompt}</p>
           {score ? (
             <p className="font-mono text-sm">
-              {`${score.title} · ${keyName(score.key)} · ${score.meter.numerator}/${score.meter.denominator} · ${score.tempoQuarterBpm} BPM`}
+              {`${translate(score.title)} · ${translate(keyName(score.key))} · ${score.meter.numerator}/${score.meter.denominator} · ${score.tempoQuarterBpm} BPM`}
               <br />
-              {`Melody: ${notesText(score.notes.filter((n) => n.voice === 'melody'))}`}
+              {`旋律：${notesText(score.notes.filter((n) => n.voice === 'melody'))}`}
               {score.chords.length > 0 ? (
                 <>
                   <br />
-                  {`Chords: ${score.chords.map((c) => `${chordSymbolText(c.symbol)} (${c.romanLabel})`).join(' | ')}`}
+                  {`和弦：${score.chords.map((c) => `${chordSymbolText(c.symbol)} (${c.romanLabel})`).join(' | ')}`}
                 </>
               ) : null}
             </p>
@@ -114,7 +115,7 @@ function PrintBlock({ block }: { block: LessonBlock }) {
           <h4 className="mt-3 font-semibold">{`Try it — ${exercise.title}`}</h4>
           <p>{exercise.instructions}</p>
           {'promptNotes' in exercise ? (
-            <p className="font-mono text-sm">{`Prompt: ${exercise.promptNotes}`}</p>
+            <p className="font-mono text-sm">{`练习音符：${exercise.promptNotes}`}</p>
           ) : null}
         </>
       );

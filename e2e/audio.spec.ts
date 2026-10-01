@@ -80,6 +80,6 @@ test('the settings diagnostic plays and stops without developer tools', async ({
   await page.getByRole('button', { name: '启用声音' }).click();
   await page.getByRole('button', { name: '弹奏三和弦' }).click();
   await expect.poll(() => page.evaluate(() => window.__audio!.started)).toBeGreaterThanOrEqual(3);
-  await page.getByRole('button', { name: '停止一切' }).click();
+  await page.getByRole('button', { name: '停止全部声音' }).click();
   await expect.poll(() => page.evaluate(() => window.__audio!.stopped)).toBeGreaterThan(0);
 });
