@@ -46,26 +46,26 @@ test('no audio context is created before a deliberate user gesture', async ({ pa
 
 test('playing a score schedules voices, and one shared context is reused', async ({ page }) => {
   await page.goto('./#/studies/s01');
-  await page.getByRole('button', { name: 'Enable sound' }).first().click();
+  await page.getByRole('button', { name: '启用声音' }).first().click();
   expect(await page.evaluate(() => window.__audio!.contexts)).toBe(1);
 
-  await page.getByRole('button', { name: /^▶ Play/ }).first().click();
+  await page.getByRole('button', { name: /^▶ 播放/ }).first().click();
   await expect.poll(() => page.evaluate(() => window.__audio!.started)).toBeGreaterThan(3);
 
   // Starting another example stops the previous one rather than layering it.
-  await page.getByRole('button', { name: '■ Stop' }).first().click();
+  await page.getByRole('button', { name: '■ 停止' }).first().click();
   await expect.poll(() => page.evaluate(() => window.__audio!.stopped)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__audio!.contexts)).toBe(1);
 });
 
 test('a route change stops scheduled playback', async ({ page }) => {
   await page.goto('./#/studies/s01');
-  await page.getByRole('button', { name: 'Enable sound' }).first().click();
-  await page.getByRole('button', { name: /^▶ Play/ }).first().click();
+  await page.getByRole('button', { name: '启用声音' }).first().click();
+  await page.getByRole('button', { name: /^▶ 播放/ }).first().click();
   await expect.poll(() => page.evaluate(() => window.__audio!.started)).toBeGreaterThan(0);
 
-  await page.getByRole('link', { name: 'Reference' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Reference' })).toBeVisible();
+  await page.getByRole('link', { name: '参考资料' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: '参考资料' })).toBeVisible();
   const stopped = await page.evaluate(() => window.__audio!.stopped);
   expect(stopped).toBeGreaterThan(0);
 
@@ -77,9 +77,9 @@ test('a route change stops scheduled playback', async ({ page }) => {
 
 test('the settings diagnostic plays and stops without developer tools', async ({ page }) => {
   await page.goto('./#/settings');
-  await page.getByRole('button', { name: 'Enable sound' }).click();
-  await page.getByRole('button', { name: 'Play a triad' }).click();
+  await page.getByRole('button', { name: '启用声音' }).click();
+  await page.getByRole('button', { name: '弹奏三和弦' }).click();
   await expect.poll(() => page.evaluate(() => window.__audio!.started)).toBeGreaterThanOrEqual(3);
-  await page.getByRole('button', { name: 'Stop everything' }).click();
+  await page.getByRole('button', { name: '停止一切' }).click();
   await expect.poll(() => page.evaluate(() => window.__audio!.stopped)).toBeGreaterThan(0);
 });

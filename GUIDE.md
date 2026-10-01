@@ -25,7 +25,7 @@ The complete release includes all 48 lessons below, all six study pieces, workin
 
 This document specifies future implementation. Writing this guide does not request implementation, a commit, a push, or a deployment in the current task. When later instructed to build the app, implement the specified application and verify it. A deployment workflow can be prepared without publishing the site.
 
-The product name is **From Inner Melody to Piano**. Short navigation label: **Inner Melody**. Default language: clear English. Keep content separate from components so later translation is possible, but multilingual UI is not a release requirement.
+The product name is **从心中旋律到钢琴**. Short navigation label: **内在旋律**. The app uses Simplified Chinese only, with no language switch. Keep content separate from components.
 
 ### Required versus optional
 

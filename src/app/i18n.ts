@@ -1,8 +1,5 @@
 import chineseText from '../content/zh-CN.json';
 
-export type Locale = 'en' | 'zh-CN';
-
-const STORAGE_KEY = 'inner-melody-language';
 const catalog: Record<string, string> = chineseText;
 const normalizedCatalog = new Map(
   Object.entries(catalog).map(([english, chinese]) => [english.replace(/\s+/g, ' ').trim(), chinese]),
@@ -10,13 +7,6 @@ const normalizedCatalog = new Map(
 const textOriginals = new WeakMap<Text, { original: string; rendered: string }>();
 const attributeOriginals = new WeakMap<Element, Map<string, { original: string; rendered: string }>>();
 const translatedAttributes = ['aria-label', 'aria-description', 'title', 'placeholder', 'alt'];
-let currentLocale: Locale = (() => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'en' || saved === 'zh-CN') return saved;
-  } catch { /* Storage may be unavailable. */ }
-  return navigator.language.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en';
-})();
 
 const overrides: Record<string, string> = {
   'A minor': 'A 小调',
@@ -51,15 +41,31 @@ const overrides: Record<string, string> = {
   'rest': '休止符',
 };
 
-export function getLocale(): Locale { return currentLocale; }
-
 export function translate(value: string): string {
-  if (currentLocale === 'en') return value;
   const match = value.match(/^(\s*)([\s\S]*?)(\s*)$/);
   if (!match) return value;
   const original = match[2];
   const translated = overrides[original] ?? catalog[original] ?? normalizedCatalog.get(original.replace(/\s+/g, ' '));
   if (!translated) {
+    const courseSummary = original.match(/^12 modules, (\d+) lessons\. (\d+) completed\.$/);
+    if (courseSummary) return `${match[1]}12 个单元，${courseSummary[1]} 节课。已完成 ${courseSummary[2]} 节。${match[3]}`;
+    const lessonCount = original.match(/^(\d+) lessons? shown\.$/);
+    if (lessonCount) return `${match[1]}显示 ${lessonCount[1]} 节课。${match[3]}`;
+    const beats = original.match(/^([\d.]+) beats?$/);
+    if (beats) return `${match[1]}${beats[1]} 拍${match[3]}`;
+    const barRange = original.match(/^Bars (\d+)–(\d+)$/);
+    if (barRange) return `${match[1]}第 ${barRange[1]}–${barRange[2]} 小节${match[3]}`;
+    const chordLabel = original.match(/^Version ([AB]), bar (\d+) (second )?chord$/);
+    if (chordLabel) return `${match[1]}版本 ${chordLabel[1]}，第 ${chordLabel[2]} 小节${chordLabel[3] ? '第二个' : ''}和弦${match[3]}`;
+    const studyRange = original.match(/^(.+) bars (\d+)–(\d+)$/);
+    if (studyRange) return `${match[1]}${translate(studyRange[1])} 第 ${studyRange[2]}–${studyRange[3]} 小节${match[3]}`;
+    const invalidBar = original.match(/^Bar (\d+) does not add up to ([\d.]+) beats, so this is saved as a draft and full arrangement playback is disabled until it is repaired\.$/);
+    if (invalidBar) return `${match[1]}第 ${invalidBar[1]} 小节的时值加起来不等于 ${invalidBar[2]} 拍，因此暂存为草稿。修正后才能播放完整编配。${match[3]}`;
+    const notebookCount = original.match(/^(\d+) notebook entries$/);
+    if (notebookCount) return `${match[1]}${notebookCount[1]} 个笔记本条目${match[3]}`;
+    if (/^Changes are not being saved(?: on this browser)? \(/.test(original)) {
+      return `${match[1]}此浏览器无法保存更改。你的操作暂存在本次会话中，仍可导出备份。${match[3]}`;
+    }
     const moduleHeading = original.match(/^Module (\d+) — (.+)$/);
     if (moduleHeading) return `${match[1]}第 ${moduleHeading[1]} 单元 — ${translate(moduleHeading[2])}${match[3]}`;
     const reviewTask = original.match(/^Review task: (.+)$/);
@@ -74,6 +80,14 @@ export function translate(value: string): string {
       .replaceAll('quarter', '四分音符').replaceAll('half', '二分音符')
       .replaceAll('eighth', '八分音符').replaceAll('whole', '全音符')
       .replaceAll('rest', '休止符')}${match[3]}`;
+    const descriptionParts = original.split(' — ');
+    if (descriptionParts.length > 1) {
+      return `${match[1]}${descriptionParts.map(translate).join(' — ')}${match[3]}`;
+    }
+    const sentences = original.split(/(?<=\.)\s+(?=[A-Z])/);
+    if (sentences.length > 1) {
+      return `${match[1]}${sentences.map(translate).join(' ')}${match[3]}`;
+    }
   }
   return translated ? `${match[1]}${translated}${match[3]}` : value;
 }
@@ -121,17 +135,9 @@ function updateTree(node: Node) {
   for (const child of element.childNodes) updateTree(child);
 }
 
-export function setLocale(locale: Locale) {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.title = locale === 'zh-CN' ? '从心中旋律到钢琴' : 'From Inner Melody to Piano';
-  try { localStorage.setItem(STORAGE_KEY, locale); } catch { /* Use this session only. */ }
-  updateTree(document.body);
-}
-
 export function startTranslation() {
-  document.documentElement.lang = currentLocale;
-  document.title = currentLocale === 'zh-CN' ? '从心中旋律到钢琴' : 'From Inner Melody to Piano';
+  document.documentElement.lang = 'zh-CN';
+  document.title = '从心中旋律到钢琴';
   const observer = new MutationObserver((changes) => {
     for (const change of changes) {
       if (change.type === 'characterData') updateTree(change.target);

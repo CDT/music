@@ -10,16 +10,16 @@ test('the print course view renders all 48 lessons without navigation', async ({
   const headings = await page.locator('h3').count();
   expect(headings).toBe(48);
 
-  await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Print this course' })).toBeHidden();
+  await expect(page.getByRole('navigation', { name: '主要' })).toBeHidden();
+  await expect(page.getByRole('button', { name: '打印本课程' })).toBeHidden();
 });
 
 test('a lesson page prints without controls and keeps its note data', async ({ page }) => {
   await page.goto('./#/lesson/m04-l04');
   await page.emulateMedia({ media: 'print' });
   await page.waitForTimeout(500);
-  await expect(page.getByRole('navigation', { name: 'Main' })).toBeHidden();
-  await expect(page.getByRole('button', { name: /Play/ }).first()).toBeHidden();
-  await expect(page.getByRole('heading', { name: 'What you will be able to do' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '主要' })).toBeHidden();
+  await expect(page.getByRole('button', { name: /播放/ }).first()).toBeHidden();
+  await expect(page.getByRole('heading', { name: '你将能够做什么' })).toBeVisible();
   await expect(page.locator('table').first()).toBeVisible();
 });

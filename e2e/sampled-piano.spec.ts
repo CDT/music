@@ -36,41 +36,41 @@ test('the recorded piano is opt-in, cached, and removable', async ({ page }) => 
 
   // Nothing is fetched by simply opening the app with sound running.
   await page.goto('./#/settings');
-  await page.getByRole('button', { name: 'Enable sound' }).click();
-  await page.getByRole('button', { name: 'Play a triad' }).click();
+  await page.getByRole('button', { name: '启用声音' }).click();
+  await page.getByRole('button', { name: '弹奏三和弦' }).click();
   await expect.poll(() => page.evaluate(() => window.__play!.oscillators)).toBeGreaterThan(0);
   expect(downloads).toEqual([]);
 
   // Choosing the recorded piano downloads it once.
-  await page.getByRole('radio', { name: /Recorded piano/ }).check();
-  await expect(page.getByText('The recorded piano is loaded and in use.')).toBeVisible({ timeout: 60_000 });
+  await page.getByRole('radio', { name: /钢琴录音/ }).check();
+  await expect(page.getByText('录制的钢琴已加载并正在使用。')).toBeVisible({ timeout: 60_000 });
   expect(downloads.length).toBeGreaterThan(20);
 
   // Notes now come from the recording rather than from oscillators.
   const oscillatorsBefore = await page.evaluate(() => window.__play!.oscillators);
   const buffersBefore = await page.evaluate(() => window.__play!.buffers);
-  await page.getByRole('button', { name: 'Play a triad' }).click();
+  await page.getByRole('button', { name: '弹奏三和弦' }).click();
   await expect.poll(() => page.evaluate(() => window.__play!.buffers)).toBeGreaterThan(buffersBefore + 2);
   expect(await page.evaluate(() => window.__play!.oscillators)).toBe(oscillatorsBefore);
 
   // A later visit loads it from the browser cache without touching the network.
   downloads.length = 0;
   await page.reload();
-  await page.getByRole('button', { name: 'Enable sound' }).click();
-  await expect(page.getByText('The recorded piano is loaded and in use.')).toBeVisible({ timeout: 60_000 });
+  await page.getByRole('button', { name: '启用声音' }).click();
+  await expect(page.getByText('录制的钢琴已加载并正在使用。')).toBeVisible({ timeout: 60_000 });
   expect(downloads).toEqual([]);
 
   // Deleting it returns to the synthesized piano.
-  await page.getByRole('button', { name: 'Delete the download' }).click();
-  await expect(page.getByRole('radio', { name: /Synthesized piano/ })).toBeChecked();
+  await page.getByRole('button', { name: '删除下载' }).click();
+  await expect(page.getByRole('radio', { name: /合成钢琴/ })).toBeChecked();
   const oscillatorsAfterDelete = await page.evaluate(() => window.__play!.oscillators);
-  await page.getByRole('button', { name: 'Play a triad' }).click();
+  await page.getByRole('button', { name: '弹奏三和弦' }).click();
   await expect.poll(() => page.evaluate(() => window.__play!.oscillators))
     .toBeGreaterThan(oscillatorsAfterDelete);
 });
 
 test('a first visit can choose the recorded piano before the course starts', async ({ page }) => {
   await page.goto('./#/start');
-  await expect(page.getByRole('radio', { name: /Synthesized piano/ })).toBeChecked();
-  await expect(page.getByText(/downloaded once/)).toBeVisible();
+  await expect(page.getByRole('radio', { name: /合成钢琴/ })).toBeChecked();
+  await expect(page.getByText(/下载一次/)).toBeVisible();
 });

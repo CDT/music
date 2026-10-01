@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-test('Chinese language covers navigation, lessons, search, and survives reload', async ({ page }) => {
+test('Chinese is the only language, including with a saved English preference', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('inner-melody-language', 'en'));
   await page.goto('./#/course');
-  await page.getByRole('button', { name: 'Switch to Simplified Chinese' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
+  await expect(page).toHaveTitle('从心中旋律到钢琴');
+  await expect(page.getByRole('button', { name: /English|切换为英文|Switch to Simplified Chinese/ })).toHaveCount(0);
   await expect(page.getByRole('link', { name: '课程', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: '课程' })).toBeVisible();
 
@@ -20,7 +22,5 @@ test('Chinese language covers navigation, lessons, search, and survives reload',
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await expect(page.getByRole('heading', { name: '同音、级进与跳进' })).toBeVisible();
 
-  await page.getByRole('button', { name: '切换为英文' }).click();
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.getByRole('heading', { name: 'Repeats, steps, and leaps' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Repeats, steps, and leaps' })).toHaveCount(0);
 });
